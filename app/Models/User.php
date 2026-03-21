@@ -11,6 +11,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use App\Models\MedicoHorario;
 use App\Models\Cita;
+use Laravel\Sanctum\HasApiTokens;
 
 
 #[Fillable(['name', 'email', 'password', 'role', 'activo'])]
@@ -18,7 +19,7 @@ use App\Models\Cita;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     /**
      * Get the attributes that should be cast.
