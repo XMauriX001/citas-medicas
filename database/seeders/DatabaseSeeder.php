@@ -14,12 +14,9 @@ class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
 
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // Usuarios
+        // Usuarios 
         User::factory()->create([
             'name' => 'Admin',
             'email' => 'admin@clinica.com',
@@ -41,31 +38,40 @@ class DatabaseSeeder extends Seeder
             'activo' => true,
         ]);
 
+        // Crear 25 médicos
         $medicos = User::factory()->count(25)->create([
             'role' => 'medico',
             'activo' => true,
         ]);
 
+        // Crear 40 pacientes
         $pacientes = Paciente::factory()->count(40)->create();
 
-        // Datos
+        // Crear expedientes para pacientes
         foreach ($pacientes as $paciente) {
             ExpedienteClinico::factory()->create([
                 'id_paciente' => $paciente->id,
             ]);
         }
 
+        // Separado por dias de la semana para cada medico
         foreach ($medicos as $medico) {
-            MedicoHorario::factory()->count(4)->create([
-                'id_medico' => $medico->id,
-            ]);
+            MedicoHorario::factory()->create(['id_medico' => $medico->id, 'dia_semana' => 1]);
+            MedicoHorario::factory()->create(['id_medico' => $medico->id, 'dia_semana' => 2]);
+            MedicoHorario::factory()->create(['id_medico' => $medico->id, 'dia_semana' => 3]);
+            MedicoHorario::factory()->create(['id_medico' => $medico->id, 'dia_semana' => 4]);
         }
 
+        // Crear citas
         for ($i = 0; $i < 80; $i++) {
-            Cita::factory()->create([
-                'id_paciente' => $pacientes->random()->id,
-                'id_medico' => $medicos->random()->id,
-            ]);
+            try {
+                Cita::factory()->create([
+                    'id_paciente' => $pacientes->random()->id,
+                    'id_medico' => $medicos->random()->id,
+                ]);
+            } catch (\Exception $e) {
+                continue;
+            }
         }
     }
 }
