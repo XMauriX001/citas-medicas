@@ -13,7 +13,7 @@ class ExpedienteClinicoPolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        return in_array($user->role, ['admin', 'medico', 'asistente']);
     }
 
     /**

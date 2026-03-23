@@ -5,9 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\ExpedienteClinico;
 use App\Models\Cita;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Paciente extends Model
 {
+    use HasFactory;
+    
     protected $table = 'pacientes';
 
     protected $fillable = [

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Cita;
@@ -13,39 +13,39 @@ class AppointmentController extends Controller
 {
     public function store(Request $request)
     {
-        // 1. Validar estructura básica del request
+        // Validar estructura básica del request
         $validated = $request->validate([
-            'paciente_id' => 'required|exists:pacientes,id',
-            'medico_id'   => 'required|exists:users,id',
+            'id_paciente' => 'required|exists:pacientes,id',
+            'id_medico'   => 'required|exists:users,id',
             'fecha'       => 'required|date|after_or_equal:today',
             'hora_inicio' => 'required|date_format:H:i',
             'motivo'      => 'nullable|string|max:500',
         ]);
 
-        $medico     = User::findOrFail($validated['medico_id']);
+        $medico     = User::findOrFail($validated['id_medico']);
         $fecha      = Carbon::parse($validated['fecha']);
         $horaInicio = Carbon::parse($validated['hora_inicio']);
         $horaFin    = $horaInicio->copy()->addHour();
 
-        // 2. Verificar que el usuario es médico
+        // Verificar que el usuario es médico
         if ($medico->role !== 'medico') {
             return response()->json([
                 'message' => 'El usuario seleccionado no es un médico.'
             ], 422);
         }
 
-        // 3. Verificar que el médico esté activo
+        // Verificar que el médico esté activo
         if (!$medico->activo) {
             return response()->json([
                 'message' => 'El médico no está disponible.'
             ], 422);
         }
 
-        // 4. Verificar que el médico trabaja ese día
-        // Carbon: 0=domingo, 1=lunes ... 6=sábado
+        // Verificar que el médico trabaja ese día
+       
         $diaSemana = $fecha->dayOfWeek;
 
-        $horario = MedicoHorario::where('user_id', $medico->id)
+        $horario = MedicoHorario::where('id_medico', $medico->id)
             ->where('dia_semana', $diaSemana)
             ->first();
 
@@ -56,19 +56,19 @@ class AppointmentController extends Controller
             ], 422);
         }
 
-        // 5. Verificar que la hora está dentro del horario del médico
+        // Verificar que la hora está dentro del horario del médico
         $inicioHorario = Carbon::parse($horario->hora_inicio);
         $finHorario    = Carbon::parse($horario->hora_fin);
 
-        // La cita debe iniciar y terminar dentro del horario
+        
         if ($horaInicio->lt($inicioHorario) || $horaFin->gt($finHorario)) {
             return response()->json([
                 'message' => "El médico atiende de {$horario->hora_inicio} a {$horario->hora_fin} ese día.",
             ], 422);
         }
 
-        // 6. Verificar que no haya cita duplicada (conflicto de horario)
-        $conflicto = Cita::where('medico_id', $medico->id)
+       
+        $conflicto = Cita::where('id_medico', $medico->id)
             ->where('fecha', $fecha->toDateString())
             ->where(function ($query) use ($horaInicio, $horaFin) {
                 // Detecta cualquier traslape, no solo mismo inicio exacto
@@ -88,11 +88,9 @@ class AppointmentController extends Controller
                 'message' => 'El médico ya tiene una cita en ese bloque de tiempo.',
             ], 409);
         }
-
-        // 7. Crear la cita
         $cita = Cita::create([
-            'paciente_id' => $validated['paciente_id'],
-            'medico_id'   => $medico->id,
+            'id_paciente' => $validated['id_paciente'],
+            'id_medico'   => $medico->id,
             'fecha'       => $fecha->toDateString(),
             'hora_inicio' => $horaInicio->format('H:i:s'),
             'hora_fin'    => $horaFin->format('H:i:s'),
@@ -111,7 +109,7 @@ class AppointmentController extends Controller
         $user = $request->user();
 
         $citas = Cita::with(['paciente', 'medico'])
-            ->when($user->role === 'medico', fn($q) => $q->where('medico_id', $user->id))
+            ->when($user->role === 'medico', fn($q) => $q->where('id_medico', $user->id))
             ->when($request->fecha, fn($q) => $q->whereDate('fecha', $request->fecha))
             ->orderBy('fecha')
             ->orderBy('hora_inicio')
@@ -120,12 +118,11 @@ class AppointmentController extends Controller
         return response()->json(['data' => $citas]);
     }
 
-    // Helper: retorna los días disponibles del médico
     private function getDiasDisponibles(int $medicoId): array
     {
         $dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
 
-        return MedicoHorario::where('user_id', $medicoId)
+        return MedicoHorario::where('id_medico', $medicoId)
             ->get()
             ->map(fn($h) => [
                 'dia'         => $dias[$h->dia_semana],
