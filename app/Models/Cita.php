@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Paciente;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Models\User;
 
 class Cita extends Model
 {
+    use HasFactory;
     protected $table = 'citas';
 
     protected $fillable = [
